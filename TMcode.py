@@ -150,7 +150,6 @@ for j in range(len(game)):
 
 #this triple nested loop removes those answers that had a redundant verifier
     S=[singVers(makeVerse(v)) for v in V]
-    ans=[x[1] for x in S[0]]
     for i in range(1,len(S)):
         for p in S[i]:
             for q in S[0]:
