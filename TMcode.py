@@ -113,7 +113,7 @@ allVers[48]=Verifier(48,9, [{x for x in deck if compare[j//3](x[[0,0,1][j%3]],x[
 # for now, hard code in the verifiers used for each present game in rule booklet. later can have user input.
 game = [[4,9,11,14],[4,9,13,17],[3,7,10,14],[3,8,15,16],[2,6,14,17],[2,7,10,13],[8,12,15,17],[3,5,9,15,16],[1,7,10,12,17],
 [2,6,8,12,15],[5,10,11,15,17],[4,9,18,20],[11,16,19,21],[2,13,17,20],[5,14,18,19,20],[2,7,12,16,19,22],[21,31,37,39],
-[23,28,41,48],[19,24,30,31,38],[11,22,30,33,34,40]]
+[23,28,41,48],[19,24,30,31,38],[11,22,30,33,34,40], [14,17,19,21,22]]
 
 # S is a set, L is a list of list of lists etc of sets. this function intersects S with every set
 def deepIntersect(S,L):
@@ -143,8 +143,9 @@ def singVers(V):
     return L
     # was "\n".join(["\n".join([ "["+str(i)+"]"+x for x in strVers(V[i]).split("\n") if x!=""]) for i in range(len(V))])
 
-for j in range(len(game)):
-    V=[game[j]]
+# given a list of verifiers, hex, this returns a list of all possible legal targets and their states
+def presolver(hex):
+    V=[hex]
     for i in range(len(V[0])): #this loop drops one verifier to see if same deduction can be made
         V.append(V[0][:i]+V[0][i+1:])
 
@@ -155,9 +156,23 @@ for j in range(len(game)):
             for q in S[0]:
                 if p[0] == q[0][:i-1]+q[0][i:] and p[1]==q[1]:
                     S[0].remove(q)
-#display results in the form of which option 
-    print("\nfor game ",j+1)
-    for s in S[0]:
+    return S[0]
+
+# display results for preset games
+for j in range(len(game)):
+    S = presolver(game[j])
+    print(len({x[1] for x in S }),"targets for game",j+1,"with criteria =",game[j])
+    for s in S:
+        print(s[0],s[1])
+    print()
+
+resp=-1
+while resp!="":
+    resp=input("enter a list of criteria numbers separated by commas, hit enter button to exit: ")
+    L = [int(x) for x in resp.split()]
+    S = presolver(L)
+    print(len({x[1] for x in S }),"targets for criteria =",L)
+    for s in S:
         print(s[0],s[1])
 
 ''' these are utility functions for future reference, e.g. when program plays moves
