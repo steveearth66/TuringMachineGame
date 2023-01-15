@@ -166,14 +166,15 @@ for j in range(len(game)):
         print(s[0],s[1])
     print()
 
-resp=-1
+resp=input("enter a list of criteria numbers separated by spaces, hit enter button to exit: ")
 while resp!="":
-    resp=input("enter a list of criteria numbers separated by commas, hit enter button to exit: ")
     L = [int(x) for x in resp.split()]
     S = presolver(L)
     print(len({x[1] for x in S }),"targets for criteria =",L)
     for s in S:
         print(s[0],s[1])
+    print()
+    resp=input("enter a list of criteria numbers separated by spaces, hit enter button to exit: ")
 
 ''' these are utility functions for future reference, e.g. when program plays moves
 # flattens all tuples in a verse to a single set
