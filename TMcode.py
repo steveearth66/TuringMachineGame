@@ -7,6 +7,15 @@
 # note that deck needs to be a list for comprehension, but must be recast as set for difference operations
 deck = [(x,y,z) for x in range(1,6) for y in range(1,6) for z in range(1,6)]
 
+#creating categories to slot possible responses. key = tuple of answer received, value = set of possible solutionss 
+piles = {}
+for i in range(2):
+    piles[(i,)]=set([])
+    for j in range(2):
+        piles[(i,j)]=set([])
+        for k in range(2):
+            piles[(i,j,k)]=set([])
+
 #encapsulating the comparison functions for easier coding
 compare = [lambda x,y: x<y, lambda x,y: x==y, lambda x,y: x>y]
 
@@ -24,13 +33,15 @@ class Verifier:
         self.num = num #this is the card number
         self.opts = opts # number of options on the card. redundant, but handy, as the len of sats
         self.sats = sats #list of sets of those tuple codes which satisfy the criteria for each option. 
-        
-    def __str__(self) -> str: #this is mostly for testing purposes
+
+''' for testing
+    def __str__(self) -> str: 
         ans=""
         for i in range(self.opts):
             ans+="\nOption "+str(i+1)+" has "+str(len(self.sats[i]))+" members\n"
             ans+=str(self.sats[i])
         return "card num = "+str(self.num)+ans
+'''
 
 allVers = [0]*49 #initializing verifier deck. 0th index just a placeholder, in order to make it 1-indexed
 #Card1: checking if blue is = or > 1
@@ -110,10 +121,6 @@ for i in range(3):
 #card48 = specific color compared to another specific color
 allVers[48]=Verifier(48,9, [{x for x in deck if compare[j//3](x[[0,0,1][j%3]],x[[1,2,2][j%3]])} for j in range(9)])
 
-# for now, hard code in the verifiers used for each present game in rule booklet. later can have user input.
-game = [[4,9,11,14],[4,9,13,17],[3,7,10,14],[3,8,15,16],[2,6,14,17],[2,7,10,13],[8,12,15,17],[3,5,9,15,16],[1,7,10,12,17],
-[2,6,8,12,15],[5,10,11,15,17],[4,9,18,20],[11,16,19,21],[2,13,17,20],[5,14,18,19,20],[2,7,12,16,19,22],[21,31,37,39],
-[23,28,41,48],[19,24,30,31,38],[11,22,30,33,34,40], [14,17,19,21,22]]
 
 # S is a set, L is a list of list of lists etc of sets. this function intersects S with every set
 def deepIntersect(S,L):
@@ -158,6 +165,12 @@ def presolver(hex):
                     S[0].remove(q)
     return S[0]
 
+''' for testing
+# for now, hard code in the verifiers used for each present game in rule booklet. later can have user input.
+game = [[4,9,11,14],[4,9,13,17],[3,7,10,14],[3,8,15,16],[2,6,14,17],[2,7,10,13],[8,12,15,17],[3,5,9,15,16],[1,7,10,12,17],
+[2,6,8,12,15],[5,10,11,15,17],[4,9,18,20],[11,16,19,21],[2,13,17,20],[5,14,18,19,20],[2,7,12,16,19,22],[21,31,37,39],
+[23,28,41,48],[19,24,30,31,38],[11,22,30,33,34,40], [14,17,19,21,22]]
+
 # display results for preset games
 for j in range(len(game)):
     S = presolver(game[j])
@@ -165,10 +178,20 @@ for j in range(len(game)):
     for s in S:
         print(s[0],s[1])
     print()
+'''
 
 resp=input("enter a list of criteria numbers separated by spaces, hit enter button to exit: ")
 while resp!="":
     L = [int(x) for x in resp.split()]
+    #create all possible queries, which could be 1, 2, or 3 of the given criterion cards
+    # NOTE: when asking multiple criterion, the order will be in the order the user entered. NOT dependent on answers received.
+    query=[[x] for x in L] #singletons
+    for i in range(len(L)):
+        for j in range(i+1,len(L)):
+            query.append([L[i],L[j]]) # asking a pair of questions
+            for k in range(j+1,len(L)):
+                query.append([L[i],L[j],L[k]]) # asking all three (max) questions.
+
     S = presolver(L)
     print(len({x[1] for x in S }),"targets for criteria =",L)
     for s in S:
