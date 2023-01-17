@@ -3,18 +3,34 @@
 # by Steve Earth
 # January 10, 2023
 
+from math import log as Log
+from math import inf as Inf
+# L is a list of integers. turns(L) is measurement of value (lower is better), but -1 is flag for no options. turns=0 is best possible
+# this estimates the expected number of turns it would take to find the target by dividing equally into the given amt of piles
+def turns(L):
+    # first strip away 0's
+    L = [x for x in L if x > 0]
+    if L == []:
+        return -1 # this means no options left
+    b = len(L) # used for base, note that b>=1, need base to acct for different length
+    if b == 1:
+        return Inf # that means everything yields the same answer, so no new information.   
+    tot = sum(L) #note: need to scale by total in order to compare different amounts
+    return sum([x/tot * Log(x,b) for x in L])
+
 # 0th index is the Blue triangle, 1st index is yellow square, 2nd index is purple circle
 # note that deck needs to be a list for comprehension, but must be recast as set for difference operations
 deck = [(x,y,z) for x in range(1,6) for y in range(1,6) for z in range(1,6)]
 
-#creating categories to slot possible responses. key = tuple of answer received, value = set of possible solutionss 
-piles = {}
-for i in range(2):
-    piles[(i,)]=set([])
-    for j in range(2):
-        piles[(i,j)]=set([])
-        for k in range(2):
-            piles[(i,j,k)]=set([])
+#creating categories to slot possible responses. key = tuple of answer received, value = list of state,target pairs 
+def resetPiles(myDict):
+    for i in [False, True]:
+        myDict[(i,)]=[]
+        for j in [False, True]:
+            myDict[(i,j)]=[]
+            for k in [False, True]:
+                myDict[(i,j,k)]=[]
+    return myDict
 
 #encapsulating the comparison functions for easier coding
 compare = [lambda x,y: x<y, lambda x,y: x==y, lambda x,y: x>y]
@@ -165,6 +181,28 @@ def presolver(hex):
                     S[0].remove(q)
     return S[0]
 
+# given list of queried criteria, Q,  with list of states for those critera, St, and a guess, g, returns response tuple
+def response(Q, st, g): #NOTE: will have to extract the appropriate states based on Q before passing to the function
+    return tuple([g in allVers[Q[i]].sats[st[i]] for i in range(len(Q))])
+
+# finding best guess and criterion to query, where S is list of state-target pairs
+def findBest(S):
+    minTurns, minGuess, minQueries = Inf,[],[]  # initializing min search
+    sols = [x[1] for x in S]
+    for guess in sols + [x for x in deck if x not in sols]:  #in case of ties, checking actual solutions first
+        for q in query:
+            piles = resetPiles({})
+            for fullPair in S:
+                piles[response(q,[fullPair[0][L.index(i)] for i in q],guess)].append(fullPair)
+            value = turns([len(piles[x]) for x in piles.keys()])
+            if value < minTurns:
+                minTurns = value
+                minQueries = q
+                minGuess = guess
+            if value ==0 :
+                return (minGuess, minQueries, piles) # do an early return if an unbeatable solution is found
+    return (minGuess, minQueries, piles)
+
 ''' for testing
 # for now, hard code in the verifiers used for each present game in rule booklet. later can have user input.
 game = [[4,9,11,14],[4,9,13,17],[3,7,10,14],[3,8,15,16],[2,6,14,17],[2,7,10,13],[8,12,15,17],[3,5,9,15,16],[1,7,10,12,17],
@@ -186,17 +224,22 @@ while resp!="":
     #create all possible queries, which could be 1, 2, or 3 of the given criterion cards
     # NOTE: when asking multiple criterion, the order will be in the order the user entered. NOT dependent on answers received.
     query=[[x] for x in L] #singletons
+    Trip=[] # temp holding for the tripletons to ensure they go last
     for i in range(len(L)):
         for j in range(i+1,len(L)):
             query.append([L[i],L[j]]) # asking a pair of questions
             for k in range(j+1,len(L)):
-                query.append([L[i],L[j],L[k]]) # asking all three (max) questions.
+                Trip.append([L[i],L[j],L[k]]) # asking all three (max) questions.
+    query+=Trip # triples go last in case of ties, want to ensure single or double beats it
 
-    S = presolver(L)
-    print(len({x[1] for x in S }),"targets for criteria =",L)
-    for s in S:
-        print(s[0],s[1])
-    print()
+    S = presolver(L) # list of 2-elem lists each of which is [states(list), target(tuple)]
+    answer = findBest(S)
+    print("best guess to make is",answer[0],"on criterion cards",answer[1])
+    for checks in answer[2].keys():
+        if answer[2][checks]!=[]:
+            print("if machine response is", checks)
+            for opt in (answer[2][checks]):
+                print("target","IS" if len(answer[2][checks])==1 else "could be",opt[1],"with criterion in states", opt[0])
     resp=input("enter a list of criteria numbers separated by spaces, hit enter button to exit: ")
 
 ''' these are utility functions for future reference, e.g. when program plays moves
@@ -219,19 +262,4 @@ def findSol(V,t):
         for x in findSol(V[i],t):
             L.append("["+str(i)+"]"+x)
     return L
-
-from math import log as Log
-from math import inf as Inf
-# L is a list of integers. turns(L) is measurement of value (lower is better), but -1 is flag for no options. turns=0 is best possible
-# this estimates the expected number of turns it would take to find the target by dividing equally into the given amt of piles
-def turns(L):
-    # first strip away 0's
-    L = [x for x in L if x > 0]
-    if L == []:
-        return -1 # this means no options left
-    b = len(L) # used for base, note that b>=1, need base to acct for different length
-    if b == 1:
-        return Inf # that means everything yields the same answer, so no new information.   
-    tot = sum(L) #note: need to scale by total in order to compare different amounts
-    return sum([x/tot * Log(x,b) for x in L])
 '''
