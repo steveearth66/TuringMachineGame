@@ -186,7 +186,7 @@ def response(Q, st, g): #NOTE: will have to extract the appropriate states based
     return tuple([g in allVers[Q[i]].sats[st[i]] for i in range(len(Q))])
 
 # finding best guess and criterion to query, where S is list of state-target pairs
-def findBest(S):
+def findBest(S, query):
     minTurns, minGuess, minQueries = Inf,[],[]  # initializing min search
     sols = [x[1] for x in S]
     for guess in sols + [x for x in deck if x not in sols]:  #in case of ties, checking actual solutions first
@@ -233,7 +233,7 @@ while resp!="":
     query+=Trip # triples go last in case of ties, want to ensure single or double beats it
 
     S = presolver(L) # list of 2-elem lists each of which is [states(list), target(tuple)]
-    answer = findBest(S)
+    answer = findBest(S, query)
     print("best guess to make is",answer[0],"on criterion cards",answer[1])
     for checks in answer[2].keys():
         if answer[2][checks]!=[]:
